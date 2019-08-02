@@ -52,7 +52,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     if (ParsePushPlugin.isInForeground()) {
       //
       // relay the push notification data to the javascript
-      ParsePushPlugin.jsCallback(getPushData(intent));
+      ParsePushPlugin.jsCallback(getPushDataStatic(intent));
     } else {
       //
       // only create entry for notification tray if plugin/application is
@@ -129,7 +129,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
   @Override
   protected void onPushOpen(Context context, Intent intent) {
     
-    JSONObject pnData = getPushData(intent);
+    JSONObject pnData = getPushDataStatic(intent);
     resetCount(getNotificationTag(context, pnData));
 
     String uriString = pnData.optString("uri");
@@ -152,7 +152,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     //
     // relay the push notification data to the javascript in case the
     // app is already running when this push is open.
-    ParsePushPlugin.jsCallback(getPushData(intent), "OPEN");
+    ParsePushPlugin.jsCallback(getPushDataStatic(intent), "OPEN");
     
   }
 
@@ -161,7 +161,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     //
     // Build a notification entry for the tray
     //
-    JSONObject pnData = getPushData(intent);
+    JSONObject pnData = getPushDataStatic(intent);
     String pnTag = getNotificationTag(context, pnData);
 
     Log.d(LOGTAG, "onPushOpen - pnTag: " + pnData);
@@ -258,7 +258,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     return null;
   }
 
-  private static JSONObject getPushData(Intent intent) {
+  static JSONObject getPushDataStatic(Intent intent) {
     JSONObject pnData = null;
     try {
       pnData = new JSONObject(intent.getStringExtra(KEY_PUSH_DATA));
@@ -275,7 +275,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
   }
 
   private static String getNotificationTag(Context context, Intent intent) {
-    return getPushData(intent).optString("title", getAppName(context));
+    return getPushDataStatic(intent).optString("title", getAppName(context));
   }
 
   private static String getNotificationTag(Context context, JSONObject pnData) {
