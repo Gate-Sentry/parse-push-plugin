@@ -1,7 +1,10 @@
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     compile 'me.leolin:ShortcutBadger:1.1.17@aar'
+    implementation "com.github.parse-community.Parse-SDK-Android:parse:1.20.0"
+    implementation "com.github.parse-community.Parse-SDK-Android:fcm:1.20.0"
 }
