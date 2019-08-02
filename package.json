@@ -1,9 +1,9 @@
 {
-  "name": "parse-push-plugin",
+  "name": "gs-push-plugin",
   "version": "1.0.8",
   "description": "Parse.Push plugin for phonegap/cordova/ionic",
   "cordova": {
-    "id": "parse-push-plugin",
+    "id": "gs-push-plugin",
     "platforms": [
       "android",
       "ios"
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/taivo/parse-push-plugin.git"
+    "url": "git+https://github.com/Gate_Sentry/parse-push-plugin.git"
   },
   "keywords": [
     "cordova",
@@ -27,7 +27,7 @@
   "author": "Tai Vo",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/taivo/parse-push-plugin/issues"
+    "url": "https://github.com/Gate_Sentry/parse-push-plugin/issues"
   },
-  "homepage": "https://github.com/taivo/parse-push-plugin#readme"
+  "homepage": "https://github.com/Gate_Sentry/parse-push-plugin#readme"
 }
