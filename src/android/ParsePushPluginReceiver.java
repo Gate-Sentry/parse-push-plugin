@@ -70,7 +70,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
       }
       else {
         // check if this is a silent notification
-        Notification notification = getNotification(context, intent);
+        Notification notification = getNotification(context, intent).build();
 
         if (notification != null) {
           // use tag + notification id=0 to limit the number of notifications in the tray
@@ -81,7 +81,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
              
               String id = context.getPackageName();
               CharSequence name = getAppName(context);
-              String description = getNotification(context, intent).extras.getCharSequence(Notification.EXTRA_TEXT).toString();
+              String description = getNotification(context, intent).build().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
               
               int importance = NotificationManager.IMPORTANCE_MAX;
               NotificationChannel mChannel = new NotificationChannel(id, name, importance);
@@ -157,7 +157,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
   }
 
   @Override
-  protected Notification getNotification(Context context, Intent intent) {
+  protected NotificationCompat.Builder getNotification(Context context, Intent intent) {
     //
     // Build a notification entry for the tray
     //
@@ -252,7 +252,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     }
 
     if (!isSilent) {
-      return builder.build();
+      return builder;
     }
 
     return null;
