@@ -29,14 +29,14 @@
             </intent-filter>
          </service>
 
-         <receiver android:name="com.parse.ParsePushBroadcastReceiver"
+         <receiver android:name="github.taivo.parsepushplugin.ParsePushPluginReceiver"
                    android:exported="false">
             <intent-filter>
                <action android:name="com.parse.push.intent.RECEIVE" />
                <action android:name="com.parse.push.intent.DELETE" />
                <action android:name="com.parse.push.intent.OPEN" />
             </intent-filter>
-      </receiver>
+         </receiver>
 
       </config-file>
       <config-file target="app/src/main/AndroidManifest.xml" parent="/manifest">
