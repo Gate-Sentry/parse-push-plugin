@@ -88,7 +88,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
 
               mChannel.setDescription(description);
               mChannel.enableLights(true);
-              mChannel.setLightColor(Color.GREEN);
+              mChannel.setLightColor(Color.RED);
               notifManager.createNotificationChannel(mChannel);
               
               Intent activityIntent = new Intent(context, getActivity(context, intent));
@@ -156,72 +156,35 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     
   }
 
+  //@TargetApi(Build.VERSION_CODES.O)
+  @Override
+  protected NotificationChannel getNotificationChannel(Context context, Intent intent) {
+    NotificationChannel channel = new NotificationChannel("visitors", "Visitor Arrivals", NotificationManager.IMPORTANCE_HIGH);
+    mChannel.enableVibration(true);
+    mChannel.setVibrationPattern(new long[]{300, 200, 600});
+    mChannel.setAllowBubbles(true);
+    mChannel.setBypassDnd(true);
+    mChannel.setLightColor(0xff0000);
+    mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+    mChannel.setShowBadge(false);
+    return channel;
+    }
+
   @Override
   protected NotificationCompat.Builder getNotification(Context context, Intent intent) {
-    //
-    // Build a notification entry for the tray
-    //
+
+    NotificationCompat.Builder builder = super.getNotification(context, intent);
+
     JSONObject pnData = getPushDataStatic(intent);
     String pnTag = getNotificationTag(context, pnData);
 
-    Log.d(LOGTAG, "onPushOpen - pnTag: " + pnData);
-
-    Intent cIntent = new Intent(ACTION_PUSH_OPEN);
-    Intent dIntent = new Intent(ACTION_PUSH_DELETE);
-
-    cIntent.putExtras(intent).setPackage(context.getPackageName());
-    dIntent.putExtras(intent).setPackage(context.getPackageName());
-
-    int contentIntentRequestCode = 0;
-    int deleteIntentRequestCode = 0;
-
-    ParsePushConfigReader config = new ParsePushConfigReader(context, null, new String[] { "ParseMultiNotifications" });
-    String parseMulti = config.get("ParseMultiNotifications");
-    if (parseMulti != null && !parseMulti.isEmpty() && parseMulti.equals("true")) {
-      Random random = new Random();
-      contentIntentRequestCode = random.nextInt();
-      deleteIntentRequestCode = random.nextInt();
-    }
-
-    PendingIntent contentIntent = PendingIntent.getBroadcast(context, contentIntentRequestCode, cIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT);
-    PendingIntent deleteIntent = PendingIntent.getBroadcast(context, deleteIntentRequestCode, dIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT);
-
-    NotificationCompat.Builder builder;
-
-    if (android.os.Build.VERSION.SDK_INT < 26){
-      builder = new NotificationCompat.Builder(context); 
-    }else{
-      int importance = NotificationManager.IMPORTANCE_HIGH;
-      NotificationManager notifManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-      NotificationChannel mChannel = notifManager.getNotificationChannel(DEFAULT_CHANNEL_ID);
-
-      if (mChannel == null) {
-        mChannel = new NotificationChannel(DEFAULT_CHANNEL_ID, DEFAULT_CHANNEL_TITLE, importance);
-        mChannel.enableVibration(true);
-        mChannel.setVibrationPattern(new long[]{200, 300, 200});
-        notifManager.createNotificationChannel(mChannel);
-      }
-      builder = new NotificationCompat.Builder(context, DEFAULT_CHANNEL_ID);
-    }
-
     // check if this is a silent notification
-    boolean isSilent = !pnData.has("title") && !pnData.has("alert");
+    if (!pnData.has("title") && !pnData.has("alert"))
+        return null;
 
-    if (pnData.has("title")) {
-      builder.setTicker(pnData.optString("title")).setContentTitle(pnData.optString("title"));
-    } else if (pnData.has("alert")) {
-      builder.setTicker(pnTag).setContentTitle(pnTag);
-    }
-
-    if (pnData.has("alert")) {
-      builder.setContentText(pnData.optString("alert"));
-    }
-
-    if (!ParsePushPlugin.isInForeground()) {
+    /*if (!ParsePushPlugin.isInForeground()) {
       builder.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI);
-    }
+    }*/
 
     if (pnData.has("badge")) {
       try {
@@ -243,20 +206,15 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
       setBadge(badgeCount, context);
     }
 
-    builder.setSmallIcon(getSmallIconId(context, intent)).setLargeIcon(getLargeIcon(context, intent))
-        .setNumber(nextCount(pnTag)).setContentIntent(contentIntent).setDeleteIntent(deleteIntent).setAutoCancel(true);
+    builder.setNumber(nextCount(pnTag));
 
     int colorId = context.getResources().getIdentifier(RESOURCE_PUSH_ICON_COLOR, "color", context.getPackageName());
     if (colorId != 0) {
       builder.setColor(context.getResources().getColor(colorId));
     }
 
-    if (!isSilent) {
       return builder;
     }
-
-    return null;
-  }
 
   static JSONObject getPushDataStatic(Intent intent) {
     JSONObject pnData = null;
