@@ -3,15 +3,23 @@ package github.taivo.parsepushplugin;
 import android.app.Application;
 
 import com.parse.Parse;
+import com.parse.ParseObject;
 import com.parse.Parse.Configuration.Builder;
 import com.parse.ParseInstallation;
+import com.parse.GetCallback;
 import com.parse.SaveCallback;
+import com.parse.DeleteCallback;
 import com.parse.ParseException;
 
 import github.taivo.parsepushplugin.ParsePushConfigReader;
 import github.taivo.parsepushplugin.ParsePushConfigException;
-
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.messaging.FirebaseMessaging;
 import android.util.Log;
+import android.widget.Toast;
 
 /*
    Why is this Application subclass needed?
@@ -68,21 +76,113 @@ public class ParsePushApplication extends Application {
            .server(config.getServerUrl()).clientKey(config.getClientKey()).build());
 
       Log.d(LOGTAG, "Saving Installation in background");
+      FirebaseInstanceId.getInstance().getInstanceId()
+        .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+            @Override
+            public void onComplete(Task<InstanceIdResult> task) {
+                if (!task.isSuccessful()) {
+                    Log.w(LOGTAG, "getInstanceId failed", task.getException());
+                    return;
+                }
+
+                // Get new Instance ID token
+                String token = task.getResult().getToken();
+
+                ParseInstallation inst = ParseInstallation.getCurrentInstallation();
+                inst.setDeviceToken(token);
+                inst.saveInBackground(new SaveCallback() {
+                    @Override
+                    public void done(ParseException ex) {
+                      if (null != ex) {
+                        Log.e(LOGTAG, ex.toString());
+                      } else {
+                        Log.e(LOGTAG, "Installation saved");
+                      }
+                    }
+                });
+            }
+        });
       //
       // save installation. Parse.Push will need this to push to the correct device
-      ParseInstallation.getCurrentInstallation().saveInBackground(new SaveCallback() {
+/*      fetchCurrentInstallation(new FetchCompleteCallback() {
         @Override
-        public void done(ParseException ex) {
-          if (null != ex) {
-            Log.e(LOGTAG, ex.toString());
-          } else {
-            Log.d(LOGTAG, "Installation saved");
-          }
+        public void onComplete() {
+          ParseInstallation inst = ParseInstallation.getCurrentInstallation();
+          if (inst != null && (inst.getDeviceToken() == null || inst.getDeviceToken().isEmpty()))
+            inst.deleteInBackground(new DeleteCallback() {
+              @Override
+              public void done(ParseException ex) {
+                if (null != ex) {
+                    Log.e(LOGTAG, ex.toString());
+                } else {
+                    Log.e(LOGTAG, "Installation deleted");
+                }
+                saveCurrentInstallation();
+              }
+            });
+          else
+            saveCurrentInstallation();
         }
       });
-
-    } catch (ParsePushConfigException ex) {
-      Log.e(LOGTAG, ex.toString());
+      */
+    } catch (Exception e) {
+      Log.e(LOGTAG, e.toString());
     }
+
+  }
+
+  private interface FetchCompleteCallback {
+    public void onComplete();
+  }
+
+  private void fetchCurrentInstallation(FetchCompleteCallback onCompletion) {
+    try {
+      ParseInstallation.getCurrentInstallation().fetchInBackground(new GetCallback<ParseObject>() {
+        @Override
+        public void done(ParseObject obj, ParseException e) {
+          onCompletion.onComplete();
+        }
+      });
+    } catch (Exception e) {
+      Log.e(LOGTAG, e.toString());
+      onCompletion.onComplete();
+    }
+  }
+
+  private void saveCurrentInstallation() {
+    fetchCurrentInstallation(new FetchCompleteCallback() {
+      @Override
+      public void onComplete() {
+
+          FirebaseInstanceId.getInstance().getInstanceId()
+        .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+            @Override
+            public void onComplete(Task<InstanceIdResult> task) {
+                if (!task.isSuccessful()) {
+                    Log.w(LOGTAG, "getInstanceId failed", task.getException());
+                    return;
+                }
+
+                // Get new Instance ID token
+                String token = task.getResult().getToken();
+
+                // Log and toast
+                ParseInstallation inst = ParseInstallation.getCurrentInstallation();
+                inst.setDeviceToken(token);
+                inst.saveInBackground(new SaveCallback() {
+                    @Override
+                    public void done(ParseException ex) {
+                      if (null != ex) {
+                        Log.e(LOGTAG, ex.toString());
+                      } else {
+                        Log.e(LOGTAG, "Installation saved");
+                      }
+                    }
+                });
+            }
+        });
+
+      }
+    });
   }
 }

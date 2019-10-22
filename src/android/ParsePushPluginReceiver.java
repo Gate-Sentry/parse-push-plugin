@@ -10,6 +10,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.NotificationChannel;
 import android.graphics.Color;
+import android.annotation.TargetApi;
 
 import github.taivo.parsepushplugin.ParsePushConfigReader;
 
@@ -47,6 +48,7 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
   private static final String KEY = "badge";
 
 
+
   @Override
   protected void onPushReceive(Context context, Intent intent) {
     if (ParsePushPlugin.isInForeground()) {
@@ -58,72 +60,8 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
       // only create entry for notification tray if plugin/application is
       // not running in foreground.
       //
-      // So first we check if the user has set the configuration to have multiple
-      // notifications show in the tray (i.e. set <preference name="ParseMultiNotifications" value="true" />)
-      ParsePushConfigReader config = new ParsePushConfigReader(context, null,
-          new String[] { "ParseMultiNotifications" });
-      String parseMulti = config.get("ParseMultiNotifications");
-      if (parseMulti != null && !parseMulti.isEmpty() && parseMulti.equals("true")) {
-        // If the user wants multiple notifications in the tray, then we let ParsePushBroadcastReceiver
-        // handle it from here
-        super.onPushReceive(context, intent);
-      }
-      else {
-        // check if this is a silent notification
-        Notification notification = getNotification(context, intent).build();
-
-        if (notification != null) {
-          // use tag + notification id=0 to limit the number of notifications in the tray
-          // (older messages with the same tag and notification id will be replaced)
-          NotificationManager notifManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-          if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-             
-              String id = context.getPackageName();
-              CharSequence name = getAppName(context);
-              String description = getNotification(context, intent).build().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
-              
-              int importance = NotificationManager.IMPORTANCE_MAX;
-              NotificationChannel mChannel = new NotificationChannel(id, name, importance);
-
-              mChannel.setDescription(description);
-              mChannel.enableLights(true);
-              mChannel.setLightColor(Color.RED);
-              notifManager.createNotificationChannel(mChannel);
-              
-              Intent activityIntent = new Intent(context, getActivity(context, intent));
-
-              PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-              NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, id)
-                    .setSmallIcon(getSmallIconId(context, intent))
-                    .setBadgeIconType(getSmallIconId(context, intent))
-                    .setChannelId(id)
-                    .setContentTitle(name)
-                    .setAutoCancel(true)
-                    .setContentIntent(pendingIntent)
-                    .setNumber(1)
-                    .setColor(Color.GREEN)
-                    .setContentText(description)
-                    .setWhen(System.currentTimeMillis());
-
-              notifManager.notify((int)(System.currentTimeMillis()/1000), notificationBuilder.build());
-
-          }else{
-              notifManager.notify(getNotificationTag(context, intent), 0, notification);
-          }
-
-        }
-
-        //
-        // A user with Android 5.0.1 reports that notif is not created in tray when
-        // app is off (not background), trying method described here
-        // https://github.com/phonegap/phonegap-plugin-push/issues/211 by @vikasing
-        // to see if it works
-        //
-        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-        setResultCode(Activity.RESULT_OK);
-      }
     }
+    super.onPushReceive(context, intent);
   }
 
   @Override
@@ -156,19 +94,25 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     
   }
 
-  //@TargetApi(Build.VERSION_CODES.O)
+  @TargetApi(android.os.Build.VERSION_CODES.O)
   @Override
   protected NotificationChannel getNotificationChannel(Context context, Intent intent) {
-    NotificationChannel channel = new NotificationChannel("visitors", "Visitor Arrivals", NotificationManager.IMPORTANCE_HIGH);
-    mChannel.enableVibration(true);
-    mChannel.setVibrationPattern(new long[]{300, 200, 600});
-    mChannel.setAllowBubbles(true);
-    mChannel.setBypassDnd(true);
-    mChannel.setLightColor(0xff0000);
-    mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-    mChannel.setShowBadge(false);
-    return channel;
+
+    NotificationChannel channel = new NotificationChannel("visitor_arrival", "Visitor Arrivals", NotificationManager.IMPORTANCE_HIGH);
+    channel.enableVibration(true);
+    channel.enableLights(true);
+    //channel.setVibrationPattern(new long[]{300, 200, 600});
+
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+      channel.setAllowBubbles(true);
     }
+    //channel.setBypassDnd(true);
+    channel.setLightColor(Color.RED);
+    //channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+    channel.setShowBadge(false);
+    return channel;
+  }
+
 
   @Override
   protected NotificationCompat.Builder getNotification(Context context, Intent intent) {
@@ -182,9 +126,9 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     if (!pnData.has("title") && !pnData.has("alert"))
         return null;
 
-    /*if (!ParsePushPlugin.isInForeground()) {
+    if (!ParsePushPlugin.isInForeground()) {
       builder.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI);
-    }*/
+    }
 
     if (pnData.has("badge")) {
       try {
@@ -207,14 +151,16 @@ public class ParsePushPluginReceiver extends ParsePushBroadcastReceiver {
     }
 
     builder.setNumber(nextCount(pnTag));
+    builder.setPriority(NotificationCompat.PRIORITY_MAX);
+    builder.setVibrate(new long[] {300, 200, 600});
 
     int colorId = context.getResources().getIdentifier(RESOURCE_PUSH_ICON_COLOR, "color", context.getPackageName());
     if (colorId != 0) {
       builder.setColor(context.getResources().getColor(colorId));
     }
 
-      return builder;
-    }
+    return builder;
+  }
 
   static JSONObject getPushDataStatic(Intent intent) {
     JSONObject pnData = null;
