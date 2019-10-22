@@ -61,6 +61,10 @@
       <hook type="before_plugin_install" src="scripts/beforeAndroidInstall.js" />
       <hook type="before_plugin_uninstall" src="scripts/beforeAndroidUninstall.js" />
       <hook type="after_prepare" src="scripts/afterAndroidPrepare.js" />
+      <edit-config file="app/src/main/AndroidManifest.xml" target="/manifest/application" mode="merge">
+          <application android:allowBackup="false" />
+          <application android:fullBackupOnly="false" />
+      </edit-config>
    </platform>
 
    <platform name="ios">
